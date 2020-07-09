@@ -11,12 +11,57 @@ const modalBtnWarning = document.querySelector('.modal__btn-warning');
 const elementsModalSubmit = [...modalSubmit.elements].filter( (item) => {
 	return item.tagName !== 'BUTTON';
 });
+const modalFileInput = document.querySelector('.modal__file-input');
+const modalFileBtn = document.querySelector('.modal__file-btn');
+const modalImageAdd = document.querySelector('.modal__image-add');
+const dataBase = JSON.parse(localStorage.getItem('awito')) || [];
+const saveDB = function () {
+	localStorage.setItem('awito', JSON.stringify(dataBase));
+}
 
-const dataBase = [];
+//Сделать очистку инпута файла
+const textFileBtn = modalFileBtn.textContent;
+const srcModalImg = modalImageAdd.src;
 
-elementsModalSubmit.forEach( () => {
+const infoPhoto = {};
+modalFileInput.addEventListener('change', (evt) => {
+	const target = evt.target;
 
-})
+	const reader = new FileReader();
+	const file = target.files[0];
+
+	infoPhoto.filename = file.name;
+	infoPhoto.size = file.size;
+
+	reader.readAsBinaryString(file);
+
+	reader.addEventListener('load', (evt) => {
+		if ( infoPhoto.size < 2000000 ) {
+			modalFileBtn.textContent = infoPhoto.filename;
+			infoPhoto.base64 = btoa(evt.target.result);
+			modalImageAdd.src = `data:image/jpeg;base64,${infoPhoto.base64}`;
+		} else {
+			modalFileBtn.textContent = 'Превышен размер файла: 2mb';
+			modalFileInput.value = '';
+		}
+	});
+
+});
+
+const renderCard = function () {
+	catalog.textContent = '';
+	dataBase.forEach( (item, index) => {
+		catalog.insertAdjacentHTML('beforeend', `
+		<li class="card data-id="${index}">
+			<img class="card__image" src="data:image/jpeg;base64,${item.image}" alt="${item.nameItem}">
+			<div class="card__descriptionm">
+				<h3 class="card__header">${item.nameItem}</h3>
+				<div class="card__price">${item.costItem}</div>
+			</div>
+		</li>
+		`);
+	})
+}
 
 addAd.addEventListener('click', () => {
 	modalAdd.classList.remove('hide');
@@ -81,6 +126,7 @@ modalSubmit.addEventListener('input', () => {
 	}
 });
 
+// Добавить в универсальное закрытие, закрытие формы после отправки
 modalSubmit.addEventListener('submit', (evt) => {
 	evt.preventDefault();
 	const itemObj = {};
@@ -88,6 +134,16 @@ modalSubmit.addEventListener('submit', (evt) => {
 	for ( const elem of elementsModalSubmit ) {
 		itemObj[elem.name] = elem.value;
 	}
+
+	itemObj.image = infoPhoto.base64;
 	dataBase.push(itemObj);
 	console.log(dataBase);
+	saveDB();
+	renderCard();
+
+	modalAdd.classList.add('hide');
+	modalSubmit.reset();
 })
+
+renderCard();
+
