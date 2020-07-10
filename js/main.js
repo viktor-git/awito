@@ -15,9 +15,43 @@ const modalFileInput = document.querySelector('.modal__file-input');
 const modalFileBtn = document.querySelector('.modal__file-btn');
 const modalImageAdd = document.querySelector('.modal__image-add');
 const dataBase = JSON.parse(localStorage.getItem('awito')) || [];
+
 const saveDB = function () {
 	localStorage.setItem('awito', JSON.stringify(dataBase));
-}
+};
+
+const renderCard = function () {
+	catalog.textContent = '';
+	dataBase.forEach( (item, index) => {
+		catalog.insertAdjacentHTML('beforeend', `
+			<li class="card" data-id="${index}">
+				<img class="card__image" src="${item.image}" alt="${item.nameItem}">
+				<div class="card__descriptionm">
+					<h3 class="card__header">${item.nameItem}</h3>
+					<div class="card__price">${item.costItem} ₽</div>
+				</div>
+			</li>
+		`);
+	});
+};
+
+const renderModalCard = function (card) {
+	const modalContent = document.querySelector('.modal__item .modal__content');
+	modalContent.innerHTML = `
+		<div>
+			<img class="modal__image modal__image-item" src="${card.image}" alt="${card.nameItem}">
+		</div>
+		<div class="modal__description">
+			<h3 class="modal__header-item">${card.nameItem}</h3>
+			<p>Категория: <span class="modal__cat-item">${card.category}</span></p>
+			<p>Состояние: <span class="modal__status-item">${card.status}</span></p>
+			<p>Описание:
+				<span class="modal__description-item">${card.descriptionItem}</span>
+			</p>
+			<p>Цена: <span class="modal__cost-item">${card.costItem} ₽</span></p>
+			<button class="btn">Купить</button>
+		</div>`;
+};
 
 //Сделать очистку инпута файла
 const textFileBtn = modalFileBtn.textContent;
@@ -32,36 +66,21 @@ modalFileInput.addEventListener('change', (evt) => {
 
 	infoPhoto.filename = file.name;
 	infoPhoto.size = file.size;
-
-	reader.readAsBinaryString(file);
-
+	
 	reader.addEventListener('load', (evt) => {
 		if ( infoPhoto.size < 2000000 ) {
 			modalFileBtn.textContent = infoPhoto.filename;
-			infoPhoto.base64 = btoa(evt.target.result);
-			modalImageAdd.src = `data:image/jpeg;base64,${infoPhoto.base64}`;
+			modalImageAdd.src = reader.result;
+			infoPhoto.src = reader.result;
 		} else {
 			modalFileBtn.textContent = 'Превышен размер файла: 2mb';
 			modalFileInput.value = '';
 		}
 	});
+	console.log(infoPhoto);
+	reader.readAsDataURL(file);
 
 });
-
-const renderCard = function () {
-	catalog.textContent = '';
-	dataBase.forEach( (item, index) => {
-		catalog.insertAdjacentHTML('beforeend', `
-		<li class="card data-id="${index}">
-			<img class="card__image" src="data:image/jpeg;base64,${item.image}" alt="${item.nameItem}">
-			<div class="card__descriptionm">
-				<h3 class="card__header">${item.nameItem}</h3>
-				<div class="card__price">${item.costItem}</div>
-			</div>
-		</li>
-		`);
-	})
-}
 
 addAd.addEventListener('click', () => {
 	modalAdd.classList.remove('hide');
@@ -75,7 +94,9 @@ catalog.addEventListener('click', (evt) => {
 
 	if ( target.closest('.card') ) {
 		modalItem.classList.remove('hide');
+		renderModalCard(dataBase[target.closest('.card').dataset.id]);
 	}
+
 	
 	document.addEventListener('keydown', modalFormCloseHandler);
 });
@@ -135,9 +156,9 @@ modalSubmit.addEventListener('submit', (evt) => {
 		itemObj[elem.name] = elem.value;
 	}
 
-	itemObj.image = infoPhoto.base64;
+	itemObj.image = infoPhoto.src;
 	dataBase.push(itemObj);
-	console.log(dataBase);
+	console.log(dataBase)
 	saveDB();
 	renderCard();
 
